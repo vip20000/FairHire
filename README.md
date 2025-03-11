@@ -15,4 +15,4 @@ Frontend: React.js
 Backend: Django (REST API)
 Microservices: Python (Flask/Django), WebSockets
 Database: SQLite (can be replaced with PostgreSQL/MySQL)
-AI/ML: YOLO (proctoring), NLP (scoring), Mediapipe (face detection)
+AI/ML: YOLO (proctoring), NLP (scoring), Mediapipe (face detection).
