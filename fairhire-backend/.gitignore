@@ -1,0 +1,28 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.so
+*.pyd
+*.dll
+
+# Virtual environments
+venv/
+fairhireb_env/
+proctoring_env/
+qgen_env/
+speech_env/
+
+# Django-specific files
+yolov5su.pt
+db.sqlite3
+media/
+staticfiles/
+static/
+*.log  # Ignore log files
+*.pot  # Translation files
+*.pyc  # Compiled Python files
+
+# Environment variables / Secret keys
+.env
+.venv
+config.json
