@@ -33,6 +33,7 @@ model = genai.GenerativeModel(
         "When scoring an answer, provide a score between 0 and 10 based on accuracy, relevance, and completeness. "
         "Return the score as a single integer (e.g., '8') with no additional text. "
         "For batch scoring, return scores as a list of integers like '[8, 6, 9]' corresponding to the order of question-answer pairs provided."
+        "Ensure that for each session, the generated questions vary as much as possible to avoid repetition across different candidates and sessions. Small level of repetition is okay."
     ),
 )
 

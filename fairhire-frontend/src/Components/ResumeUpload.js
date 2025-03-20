@@ -147,6 +147,11 @@ const ResumeUpload = () => {
 
   const handleCloseSnackbar = () => setSnackbarOpen(false);
 
+  // Function to navigate to the homepage
+  const handleLogoClick = () => {
+    navigate("/"); // Assuming "/" is the route for your homepage
+  };
+
   return (
     <Box
       sx={{
@@ -163,6 +168,7 @@ const ResumeUpload = () => {
     >
       <Typography
         variant="h3"
+        onClick={handleLogoClick} // Add click handler
         sx={{
           position: "absolute",
           top: 20,
@@ -171,6 +177,11 @@ const ResumeUpload = () => {
           fontWeight: 700,
           color: theme.primary,
           textShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
+          cursor: "pointer", // Indicate it's clickable
+          "&:hover": {
+            color: theme.secondary, // Slight hover effect
+            transition: "color 0.3s ease", // Smooth transition
+          },
         }}
       >
         FairHire
@@ -262,7 +273,7 @@ const ResumeUpload = () => {
                   <UploadIcon sx={{ ml: 1.5, fontSize: "24px" }} />
                 </Button>
               </label>
-              <Typography variant="body1" sx={{ mt: 2, color: theme.neutral, fontFamily: "Open Sans, sans-serif", fontSize: "16px" }}>
+              <Typography variant="body1" sx={{ mt:2, color: theme.neutral, fontFamily: "Open Sans, sans-serif", fontSize: "16px" }}>
                 {resume ? `Selected File: ${resume.name}` : "Or drag and drop here"}
               </Typography>
             </Box>

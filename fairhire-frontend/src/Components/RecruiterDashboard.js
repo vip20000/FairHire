@@ -14,6 +14,7 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
+  Grid, // Added Grid import
 } from "@mui/material";
 import { Fade } from "react-awesome-reveal";
 import ApplicantList from "./ApplicantList";
@@ -143,6 +144,16 @@ const RecruiterDashboard = () => {
       console.error("Logout error:", err);
       setAlertMessage("Failed to log out. Please try again.");
     }
+  };
+
+  // Function to generate a random 6-character job code
+  const handleGenerateCode = () => {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+      code += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    setUniqueCode(code);
   };
 
   return (
@@ -401,25 +412,52 @@ const RecruiterDashboard = () => {
                   </Select>
                 </FormControl>
 
-                <TextField
-                  fullWidth
-                  label="Job Code"
-                  value={uniqueCode}
-                  onChange={(e) => setUniqueCode(e.target.value)}
-                  variant="outlined"
-                  sx={{
-                    mb: 4,
-                    "& .MuiOutlinedInput-root": {
-                      borderRadius: "8px",
-                      backgroundColor: "#e8f0fe",
-                      "& fieldset": { borderColor: theme.secondary },
-                      "&:hover fieldset": { borderColor: theme.primary },
-                      "&.Mui-focused fieldset": { borderColor: theme.primary },
-                    },
-                    "& .MuiInputLabel-root": { color: theme.neutral },
-                    "& .MuiInputLabel-root.Mui-focused": { color: theme.primary },
-                  }}
-                />
+                {/* Modified Job Code Section */}
+                <Typography variant="body2" sx={{ mb: 1, color: theme.neutral }}>
+                  Enter a unique job code or click "Generate" to create one.
+                </Typography>
+                <Grid container spacing={2} sx={{ mb: 4 }}>
+                  <Grid item xs={9}>
+                    <TextField
+                      fullWidth
+                      label="Job Code"
+                      value={uniqueCode}
+                      onChange={(e) => setUniqueCode(e.target.value)}
+                      variant="outlined"
+                      sx={{
+                        "& .MuiOutlinedInput-root": {
+                          borderRadius: "8px",
+                          backgroundColor: "#e8f0fe",
+                          "& fieldset": { borderColor: theme.secondary },
+                          "&:hover fieldset": { borderColor: theme.primary },
+                          "&.Mui-focused fieldset": { borderColor: theme.primary },
+                        },
+                        "& .MuiInputLabel-root": { color: theme.neutral },
+                        "& .MuiInputLabel-root.Mui-focused": { color: theme.primary },
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={3}>
+                    <Button
+                      variant="contained"
+                      onClick={handleGenerateCode}
+                      sx={{
+                        backgroundColor: theme.secondary,
+                        color: "#fff",
+                        padding: "10px 20px",
+                        fontSize: "14px",
+                        borderRadius: "8px",
+                        textTransform: "none",
+                        "&:hover": {
+                          backgroundColor: theme.primary,
+                        },
+                        width: "100%",
+                      }}
+                    >
+                      Generate
+                    </Button>
+                  </Grid>
+                </Grid>
 
                 <Box sx={{ display: "flex", justifyContent: "center" }}>
                   <Button

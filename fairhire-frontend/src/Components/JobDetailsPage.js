@@ -79,6 +79,11 @@ const JobDetailsPage = () => {
     navigate("/start-interview", { state: { candidateId, jobCode, jobDetails } });
   };
 
+  // Function to navigate to the homepage
+  const handleLogoClick = () => {
+    navigate("/"); // Assuming "/" is the route for your homepage
+  };
+
   return (
     <Box
       sx={{
@@ -96,6 +101,7 @@ const JobDetailsPage = () => {
       {/* Top-Left Branding */}
       <Typography
         variant="h3"
+        onClick={handleLogoClick} // Add click handler
         sx={{
           position: "absolute",
           top: 20,
@@ -104,6 +110,11 @@ const JobDetailsPage = () => {
           fontWeight: 700,
           color: theme.primary,
           textShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
+          cursor: "pointer", // Indicate it's clickable
+          "&:hover": {
+            color: theme.secondary, // Slight hover effect
+            transition: "color 0.3s ease", // Smooth transition
+          },
         }}
       >
         FairHire

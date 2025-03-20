@@ -1,56 +1,99 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
-import { Button, Typography, TextField, Box, Grid, Paper, Snackbar, Alert, Tooltip, CircularProgress } from '@mui/material';
-import { styled } from '@mui/system';
-import VolumeUpIcon from '@mui/icons-material/VolumeUp';
-import MicIcon from '@mui/icons-material/Mic';
-import SyncIcon from '@mui/icons-material/Sync';
-import staticAvatar from './avatar-static.jpg';
-import speakingAvatar from './avatar-speaking.gif';
+"use client";
 
-// Animated icons with gradient and blinking
-const SpeakingIcon = styled(VolumeUpIcon)({
-  fontSize: '48px',
-  color: '#1976d2',
-  background: 'linear-gradient(45deg, #1976d2, #42a5f5)',
-  WebkitBackgroundClip: 'text',
-  WebkitTextFillColor: 'transparent',
-  animation: 'blink 1.2s infinite',
-  '@keyframes blink': {
-    '0%': { opacity: 1 },
-    '50%': { opacity: 0.5 },
-    '100%': { opacity: 1 },
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useLocation } from "react-router-dom";
+import {
+  Button,
+  Typography,
+  TextField,
+  Box,
+  Grid,
+  Paper,
+  Snackbar,
+  Alert,
+  Chip,
+  LinearProgress,
+  CircularProgress,
+} from "@mui/material";
+import { styled } from "@mui/system";
+import VolumeUpIcon from "@mui/icons-material/VolumeUp";
+import MicIcon from "@mui/icons-material/Mic";
+import SyncIcon from "@mui/icons-material/Sync";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import staticAvatar from "./avatar-static.jpg";
+import speakingAvatar from "./avatar-speaking.gif";
+
+// Updated theme with original background image
+const theme = {
+  primary: "#0277bd",
+  secondary: "#42a5f5",
+  accent: "#29b6f6",
+  success: "#4caf50",
+  warning: "#ff9800",
+  error: "#d32f2f",
+  backgroundImage: "url(https://www.transparenttextures.com/patterns/geometry.png)",
+  cardBg: "rgba(255, 255, 255, 0.9)",
+  textPrimary: "#1e293b",
+  textSecondary: "#5a6a82",
+};
+
+// Styled components (unchanged)
+const GradientButton = styled(Button)(({ color = theme.primary, hoverColor = theme.accent }) => ({
+  background: `linear-gradient(45deg, ${color} 0%, ${hoverColor} 100%)`,
+  color: "white",
+  fontWeight: 700,
+  padding: "12px 30px",
+  borderRadius: "12px",
+  textTransform: "none",
+  boxShadow: "0 4px 15px rgba(0, 0, 0, 0.2)",
+  transition: "all 0.3s ease",
+  "&:hover": {
+    background: `linear-gradient(45deg, ${hoverColor} 0%, ${color} 100%)`,
+    boxShadow: "0 6px 20px rgba(0, 0, 0, 0.25)",
+    transform: "translateY(-2px)",
   },
+  "&.Mui-disabled": {
+    background: "#bdbdbd",
+    color: "#ffffff80",
+  },
+}));
+
+const GlassCard = styled(Paper)({
+  background: theme.cardBg,
+  backdropFilter: "blur(12px)",
+  borderRadius: "16px",
+  boxShadow: "0 4px 20px rgba(0, 0, 0, 0.1)",
+  border: "1px solid rgba(255, 255, 255, 0.3)",
+  transition: "all 0.3s ease",
+  "&:hover": { transform: "translateY(-3px)", boxShadow: "0 6px 25px rgba(0, 0, 0, 0.15)" },
+});
+
+const SpeakingIcon = styled(VolumeUpIcon)({
+  fontSize: "50px",
+  color: theme.primary,
+  animation: "pulse 1.5s ease-in-out infinite",
+  "@keyframes pulse": { "0%": { transform: "scale(1)" }, "50%": { transform: "scale(1.1)" }, "100%": { transform: "scale(1)" } },
 });
 
 const ListeningIcon = styled(MicIcon)({
-  fontSize: '48px',
-  color: '#4caf50',
-  background: 'linear-gradient(45deg, #4caf50, #81c784)',
-  WebkitBackgroundClip: 'text',
-  WebkitTextFillColor: 'transparent',
-  animation: 'blink 1s infinite',
-  '@keyframes blink': {
-    '0%': { opacity: 1 },
-    '50%': { opacity: 0.4 },
-    '100%': { opacity: 1 },
-  },
+  fontSize: "50px",
+  color: theme.success,
+  animation: "pulse 1.5s ease-in-out infinite",
+  "@keyframes pulse": { "0%": { transform: "scale(1)" }, "50%": { transform: "scale(1.1)" }, "100%": { transform: "scale(1)" } },
 });
 
 const FrameSendingIcon = styled(SyncIcon)({
-  fontSize: '24px',
-  color: '#ff9800',
-  animation: 'rotate 1.5s linear infinite',
-  '@keyframes rotate': {
-    '0%': { transform: 'rotate(0deg)' },
-    '100%': { transform: 'rotate(360deg)' },
-  },
+  fontSize: "24px",
+  color: theme.warning,
+  animation: "rotate 1.5s linear infinite",
+  "@keyframes rotate": { "0%": { transform: "rotate(0deg)" }, "100%": { transform: "rotate(360deg)" } },
 });
 
 const StartInterview = () => {
   const location = useLocation();
-  const candidateId = location.state?.candidateId;
-  const jobCode = location.state?.jobCode;
+  const { candidateId, jobCode } = location.state || {};
 
   const [skills, setSkills] = useState([]);
   const [jobDetails, setJobDetails] = useState(null);
@@ -58,16 +101,14 @@ const StartInterview = () => {
   const [isCallEnded, setIsCallEnded] = useState(false);
   const [stream, setStream] = useState(null);
   const [socket, setSocket] = useState(null);
-  const [currentQuestion, setCurrentQuestion] = useState("");
   const [displayedQuestion, setDisplayedQuestion] = useState("Please wait for the first question...");
   const [candidateAnswer, setCandidateAnswer] = useState("");
   const [interviewStarted, setInterviewStarted] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [notification, setNotification] = useState({ open: false, message: '', severity: 'warning' });
+  const [notification, setNotification] = useState({ open: false, message: "", severity: "warning" });
   const [isTtsActive, setIsTtsActive] = useState(false);
-  const [questionCount, setQuestionCount] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(120); // 120-second timer
+  const [timeLeft, setTimeLeft] = useState(120);
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -77,581 +118,372 @@ const StartInterview = () => {
   const timerRef = useRef(null);
 
   const playSmoothTone = () => {
-    const tone = new Audio('https://www.soundjay.com/buttons/beep-07a.mp3');
-    tone.play().catch(err => console.warn("Audio playback failed:", err));
+    const tone = new Audio("https://www.soundjay.com/buttons/beep-07a.mp3");
+    tone.play().catch((err) => console.warn("Audio playback failed:", err));
   };
 
-  // Answer Confidence Meter Logic
   const getAnswerConfidence = (answer) => {
     const length = answer.trim().length;
-    if (length < 50) return { label: 'Weak', color: '#d32f2f', width: '25%', message: 'Try to elaborate more!' };
-    if (length < 150) return { label: 'Good', color: '#ff9800', width: '50%', message: 'Nice, add more details!' };
-    return { label: 'Great', color: '#4caf50', width: '75%', message: 'Excellent response!' };
+    if (length < 50) return { label: "Weak", color: theme.error, value: 25, message: "Elaborate more for a stronger response." };
+    if (length < 150) return { label: "Good", color: theme.warning, value: 50, message: "Solid answer—add more details!" };
+    return { label: "Great", color: theme.success, value: 75, message: "Well-articulated response!" };
   };
 
+  // Existing useEffect hooks and functions remain unchanged
   useEffect(() => {
     if (!candidateId) return;
-
     fetch(`http://127.0.0.1:8000/resume/candidate_skills/?candidate_id=${candidateId}`)
-      .then(response => response.json())
-      .then(data => setSkills(data.skills || []))
-      .catch(error => console.error("Failed to fetch candidate skills:", error));
+      .then((response) => response.json())
+      .then((data) => setSkills(data.skills || []))
+      .catch((error) => console.error("Failed to fetch skills:", error));
   }, [candidateId]);
 
   useEffect(() => {
     if (!jobCode) return;
-
     fetch(`http://127.0.0.1:8000/recruiter/job-summary/?job_code=${jobCode}`)
-      .then(response => response.json())
-      .then(data => {
-        if (data.status === "success" && data.data) {
-          setJobDetails(data.data);
-        }
-      })
-      .catch(error => console.error("Failed to fetch job details:", error));
+      .then((response) => response.json())
+      .then((data) => data.status === "success" && setJobDetails(data.data))
+      .catch((error) => console.error("Failed to fetch job details:", error));
   }, [jobCode]);
 
   useEffect(() => {
-    if (!candidateId) {
-      console.warn("Candidate ID is missing! Cannot proceed with proctoring.");
-      return;
-    }
-
-    console.log("Requesting camera and microphone access...");
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+    if (!candidateId) return;
+    navigator.mediaDevices
+      .getUserMedia({ video: true, audio: true })
       .then((mediaStream) => {
-        console.log("Camera and microphone access granted.");
         setStream(mediaStream);
         setIsCameraReady(true);
-        if (videoRef.current) {
-          videoRef.current.srcObject = mediaStream;
-        }
+        if (videoRef.current) videoRef.current.srcObject = mediaStream;
       })
       .catch((err) => {
-        console.error("Error accessing camera/audio:", err);
+        console.error("Error accessing media:", err);
         setIsCameraReady(false);
       });
-
-    return () => {
-      if (stream) {
-        console.log("Stopping camera and microphone streams.");
-        stream.getTracks().forEach((track) => track.stop());
-      }
-    };
+    return () => stream?.getTracks().forEach((track) => track.stop());
   }, [candidateId]);
 
   useEffect(() => {
     if (interviewStarted && isCameraReady && candidateId) {
-      console.log("Starting proctoring frame capture every 3 seconds.");
-      proctoringIntervalRef.current = setInterval(() => {
-        captureAndSendFrame();
-      }, 3000);
-
-      return () => {
-        console.log("Stopping proctoring frame capture.");
-        if (proctoringIntervalRef.current) {
-          clearInterval(proctoringIntervalRef.current);
-          proctoringIntervalRef.current = null;
-        }
-      };
+      proctoringIntervalRef.current = setInterval(() => captureAndSendFrame(), 3000);
+      return () => clearInterval(proctoringIntervalRef.current);
     }
   }, [interviewStarted, isCameraReady, candidateId]);
 
   useEffect(() => {
     if (interviewStarted && !isTtsActive && !isCallEnded) {
       timerRef.current = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            clearInterval(timerRef.current);
-            sendAnswer(); // Auto-submit if time runs out
-            return 120;
-          }
-          return prev - 1;
-        });
+        setTimeLeft((prev) => (prev <= 1 ? (sendAnswer(), 120) : prev - 1));
       }, 1000);
-
-      return () => {
-        clearInterval(timerRef.current);
-      };
+      return () => clearInterval(timerRef.current);
     }
   }, [interviewStarted, isTtsActive, isCallEnded]);
 
   const captureAndSendFrame = async () => {
-    if (!canvasRef.current || !videoRef.current) {
-      console.warn("Canvas or video reference missing. Skipping frame capture.");
-      return;
-    }
-
+    if (!canvasRef.current || !videoRef.current) return;
     const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
-    const video = videoRef.current;
-
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
+    const context = canvas.getContext("2d");
+    context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
     canvas.toBlob(async (blob) => {
-      if (blob) {
-        console.log("Captured frame, sending to proctoring service...");
-        const formData = new FormData();
-        formData.append('frame', blob, 'frame.jpg');
-        formData.append('candidate_id', candidateId);
-
-        try {
-          const response = await fetch('http://127.0.0.1:8000/proctoring/frame/', {
-            method: 'POST',
-            body: formData,
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            console.log('Frame response:', data);
-
-            if (data.proctoring_flag) {
-              const reasons = data.reason || {};
-              const violationMessages = [];
-              if (reasons.multiple_persons_detected) violationMessages.push("Multiple persons detected");
-              if (reasons.no_person_detected) violationMessages.push("No person detected");
-              if (reasons.device_detected) violationMessages.push("Device detected");
-
-              if (violationMessages.length > 0) {
-                const message = `Warning: ${violationMessages.join(', ')}. You are being monitored by our AI systems.`;
-                console.log('Triggering notification:', message);
-                setNotification({
-                  open: true,
-                  message: message,
-                  severity: 'warning'
-                });
-              }
-            }
-          } else {
-            console.error('Error sending frame. Status:', response.status, 'Response:', await response.text());
-          }
-        } catch (error) {
-          console.error('Error in proctoring request:', error);
+      if (!blob) return;
+      const formData = new FormData();
+      formData.append("frame", blob, "frame.jpg");
+      formData.append("candidate_id", candidateId);
+      try {
+        const response = await fetch("http://127.0.0.1:8000/proctoring/frame/", { method: "POST", body: formData });
+        const data = await response.json();
+        if (data.proctoring_flag) {
+          const reasons = data.reason || {};
+          const messages = [];
+          if (reasons.multiple_persons_detected) messages.push("Multiple persons detected");
+          if (reasons.no_person_detected) messages.push("No person detected");
+          if (reasons.device_detected) messages.push("Device detected");
+          if (messages.length) setNotification({ open: true, message: `Warning: ${messages.join(", ")}.`, severity: "warning" });
         }
+      } catch (error) {
+        console.error("Proctoring error:", error);
       }
-    }, 'image/jpeg');
+    }, "image/jpeg");
   };
 
-  const handleCloseNotification = () => {
-    setNotification({ ...notification, open: false });
-  };
+  const handleCloseNotification = () => setNotification({ ...notification, open: false });
 
   useEffect(() => {
-    if (!candidateId) return;
-
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = true;
-      recognitionRef.current.onresult = (event) => {
-        const transcript = Array.from(event.results)
-          .map(result => result[0])
-          .map(result => result.transcript)
-          .join('');
-        setCandidateAnswer(transcript);
-      };
-      recognitionRef.current.onstart = () => {
-        playSmoothTone(); // Smooth tone when recording starts
-      };
-      recognitionRef.current.onend = () => {
-        if (isRecording && interviewStarted && !isCallEnded) {
-          playSmoothTone(); // Smooth tone when recording stops
-          try {
-            recognitionRef.current.start();
-          } catch (err) {
-            console.warn("SpeechRecognition restart failed:", err);
-          }
-        }
-      };
-    } else {
-      console.warn('Speech recognition not supported in this browser.');
-    }
+    if (!candidateId || !("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) return;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognitionRef.current = new SpeechRecognition();
+    recognitionRef.current.continuous = true;
+    recognitionRef.current.interimResults = true;
+    recognitionRef.current.onresult = (event) => {
+      const transcript = Array.from(event.results).map((result) => result[0].transcript).join("");
+      setCandidateAnswer(transcript);
+    };
+    recognitionRef.current.onstart = () => playSmoothTone();
+    recognitionRef.current.onend = () => {
+      if (isRecording && interviewStarted && !isCallEnded) {
+        playSmoothTone();
+        recognitionRef.current.start();
+      }
+    };
   }, [candidateId, interviewStarted, isCallEnded]);
 
   const startInterview = useCallback(() => {
-    if (!jobDetails || skills.length === 0) {
-      console.error("Missing job details or skills. Cannot start interview.");
-      return;
-    }
-
+    if (!jobDetails || skills.length === 0) return;
     const ws = new WebSocket("ws://localhost:8765");
-
     ws.onopen = () => {
-      console.log("WebSocket connection established.");
-      ws.send(JSON.stringify({
-        candidate_id: candidateId,
-        job_name: jobDetails.job_name,
-        num_questions: jobDetails.num_questions,
-        skills: skills,
-      }));
+      ws.send(JSON.stringify({ candidate_id: candidateId, job_name: jobDetails.job_name, num_questions: jobDetails.num_questions, skills }));
       setInterviewStarted(true);
       setSocket(ws);
     };
-
     ws.onmessage = (event) => {
-      console.log("Received question:", event.data);
-      try {
-        const response = JSON.parse(event.data);
-        if (response.status === "Interview Completed") {
-          handleEndCall();
-        } else if (response.question) {
-          const cleanedQuestion = response.question.split("\n\n")[0];
-          setCurrentQuestion(cleanedQuestion);
-          setDisplayedQuestion("");
-          setQuestionCount((prev) => prev + 1);
-          setTimeLeft(120); // Reset timer for new question
-
-          if ('speechSynthesis' in window) {
-            setIsTtsActive(true);
-            setIsSpeaking(true);
-            speechRef.current.text = cleanedQuestion;
-
-            let index = 0;
-            const totalDuration = cleanedQuestion.length * 50;
-            const intervalDuration = totalDuration / cleanedQuestion.length;
-            const displayInterval = setInterval(() => {
-              if (index < cleanedQuestion.length) {
-                setDisplayedQuestion(cleanedQuestion.slice(0, index + 1));
-                index++;
-              } else {
-                clearInterval(displayInterval);
-              }
-            }, intervalDuration);
-
-            speechRef.current.onend = () => {
-              setIsSpeaking(false);
-              setIsTtsActive(false);
-              clearInterval(displayInterval);
-              setDisplayedQuestion(cleanedQuestion);
-              if (recognitionRef.current && !isRecording) {
-                try {
-                  recognitionRef.current.start();
-                  setIsRecording(true);
-                } catch (err) {
-                  console.warn("SpeechRecognition start failed:", err);
-                }
-              }
-            };
-            window.speechSynthesis.speak(speechRef.current);
-          } else {
-            console.warn('Speech synthesis not supported in this browser.');
-            setDisplayedQuestion(cleanedQuestion);
+      const response = JSON.parse(event.data);
+      if (response.status === "Interview Completed") handleEndCall();
+      else if (response.question) {
+        const cleanedQuestion = response.question.split("\n\n")[0];
+        setDisplayedQuestion("");
+        setTimeLeft(120);
+        setIsTtsActive(true);
+        setIsSpeaking(true);
+        speechRef.current.text = cleanedQuestion;
+        let index = 0;
+        const interval = setInterval(() => {
+          if (index < cleanedQuestion.length) setDisplayedQuestion(cleanedQuestion.slice(0, ++index));
+          else clearInterval(interval);
+        }, 50);
+        speechRef.current.onend = () => {
+          setIsSpeaking(false);
+          setIsTtsActive(false);
+          setDisplayedQuestion(cleanedQuestion);
+          if (recognitionRef.current && !isRecording) {
+            recognitionRef.current.start();
+            setIsRecording(true);
           }
-        } else {
-          console.error('Question data is missing or malformed:', response);
-          setNotification({
-            open: true,
-            message: "Error: Unable to process question data.",
-            severity: 'error'
-          });
-        }
-      } catch (error) {
-        console.error('Error parsing JSON data:', error, event.data);
-        setNotification({
-          open: true,
-          message: "Error: Invalid response from server.",
-          severity: 'error'
-        });
+        };
+        window.speechSynthesis.speak(speechRef.current);
       }
     };
-
-    ws.onerror = (error) => {
-      console.error("WebSocket error:", error);
-      setNotification({
-        open: true,
-        message: "Error: Unable to connect to the interview server.",
-        severity: 'error'
-      });
-      setInterviewStarted(false);
-    };
-
-    ws.onclose = () => {
-      console.log("WebSocket connection closed.");
-      setInterviewStarted(false);
-      setSocket(null);
-    };
+    ws.onerror = () => setNotification({ open: true, message: "Connection error.", severity: "error" });
+    ws.onclose = () => setInterviewStarted(false);
   }, [candidateId, jobDetails, skills]);
 
   const sendAnswer = () => {
     if (socket && candidateAnswer.trim()) {
       socket.send(JSON.stringify({ candidate_id: candidateId, answer: candidateAnswer }));
       setCandidateAnswer("");
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-        setIsRecording(false);
-      }
+      if (recognitionRef.current) recognitionRef.current.stop();
+      setIsRecording(false);
       setDisplayedQuestion("Waiting for the next question...");
-      setTimeLeft(120); // Reset timer after submission
+      setTimeLeft(120);
     }
   };
 
   const handleEndCall = async () => {
     setIsCallEnded(true);
-    if (stream) stream.getTracks().forEach((track) => track.stop());
-    if (socket) socket.close();
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      setIsRecording(false);
-    }
-    if (timerRef.current) clearInterval(timerRef.current);
-
-    try {
-      const response = await fetch('http://127.0.0.1:8000/proctoring/end/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ 'candidate_id': candidateId })
-      });
-      if (response.ok) {
-        console.log('Interview end signaled to backend successfully');
-      } else {
-        console.error('Error signaling interview end. Status:', response.status);
-      }
-    } catch (error) {
-      console.error('Error signaling interview end:', error);
-    }
+    stream?.getTracks().forEach((track) => track.stop());
+    socket?.close();
+    recognitionRef.current?.stop();
+    setIsRecording(false);
+    clearInterval(timerRef.current);
+    await fetch("http://127.0.0.1:8000/proctoring/end/", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ candidate_id: candidateId }),
+    });
   };
 
   if (isCallEnded) {
     return (
-      <Box sx={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        backgroundImage: 'url(https://www.transparenttextures.com/patterns/geometry.png)',
-        backgroundSize: 'cover',
-        fontFamily: "'Poppins', sans-serif"
-      }}>
-        <Paper sx={{
-          backgroundColor: "rgba(255, 255, 255, 0.9)",
-          padding: "50px",
-          borderRadius: "16px",
-          boxShadow: "0 10px 20px rgba(0, 0, 0, 0.15)",
-          backdropFilter: "blur(5px)",
-          textAlign: "center"
-        }}>
-          <Typography variant="h4" color="#0277bd" sx={{ fontFamily: "'Montserrat', sans-serif" }}>Interview Completed</Typography>
-          <Typography variant="body1" color="#333" sx={{ fontFamily: "'Poppins', sans-serif" }}>Thank you for participating. We will contact you soon.</Typography>
-        </Paper>
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", backgroundImage: theme.backgroundImage }}>
+        <GlassCard sx={{ p: 6, maxWidth: 600, textAlign: "center", animation: "fadeIn 0.5s ease-in" }}>
+          <CheckCircleIcon sx={{ fontSize: 80, color: theme.success, mb: 3 }} />
+          <Typography variant="h4" sx={{ color: theme.primary, mb: 2, fontWeight: 700 }}>
+            Interview Completed
+          </Typography>
+          <Typography variant="body1" sx={{ color: theme.textSecondary, mb: 4 }}>
+            Thank you for participating! Your responses are being reviewed.
+          </Typography>
+          <GradientButton color={theme.success} hoverColor="#66bb6a">
+            Go to Home Page
+          </GradientButton>
+        </GlassCard>
+        <style>{`
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+        `}</style>
       </Box>
     );
   }
 
-  const instructions = (
-    <Box sx={{ p: 2, bgcolor: '#f5f5f5', borderRadius: '8px', maxWidth: '350px' }}>
-      <Typography variant="body2" sx={{ fontFamily: "'Poppins', sans-serif", color: '#333' }}>
-        <ul style={{ paddingLeft: '20px', margin: 0 }}>
-          <li>Speak clearly into your microphone for best results.</li>
-          <li>Begin speaking only after the question is fully read.</li>
-          <li>Ensure you are alone; the proctoring system detects multiple persons or devices.</li>
-          <li>Do not switch tabs or windows during the interview.</li>
-          <li>Sit in a well-lit room with your face clearly visible.</li>
-          <li>Avoid background noise for accurate speech recognition.</li>
-          <li>Answer within 2 minutes; answers will auto-submit if time runs out.</li>
-        </ul>
-      </Typography>
-    </Box>
-  );
-
   return (
-    <Box sx={{
-      height: '100vh',
-      backgroundImage: 'url(https://www.transparenttextures.com/patterns/geometry.png)',
-      backgroundSize: 'cover',
-      fontFamily: "'Poppins', sans-serif",
-      position: 'relative'
-    }}>
-      {/* FairHire Branding */}
-      <Box sx={{
-        position: 'absolute',
-        top: '20px',
-        left: '20px',
-        display: 'flex',
-        alignItems: 'center',
-        zIndex: 1
-      }}>
-        <Typography variant="h4" sx={{ color: '#0277bd', fontWeight: 'bold', fontFamily:"'Poppins', sans-serif", fontSize: '3rem' }}>
+    <Box sx={{ minHeight: "100vh", backgroundImage: theme.backgroundImage, position: "relative", p: 2 }}>
+      <Box sx={{ position: "absolute", top: 20, left: 20 }}>
+        <Typography variant="h3" sx={{ color: theme.primary, fontWeight: 900, letterSpacing: "-1px" }}>
           FairHire
         </Typography>
       </Box>
 
-      <Grid container sx={{ height: '100%' }}>
+      <Grid container sx={{ minHeight: "100vh", pt: 10 }}>
         {/* Left Column (Camera) */}
-        <Grid item xs={12} md={6} sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRight: '3px solid #0277bd' }}>
-          <Paper sx={{
-            flexGrow: 1,
-            backgroundColor: "rgba(255, 255, 255, 0.9)",
-            borderRadius: "0 16px 16px 0",
-            boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-            backdropFilter: "blur(5px)",
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
-            <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-              <Typography variant="h6" sx={{ position: 'absolute', top: '10px', left: '50%', transform: 'translateX(-50%)', color: "#0277bd", zIndex: 1, fontFamily: "'Montserrat', sans-serif" }}>
-                Your Camera Feed
+        <Grid item xs={12} md={6} sx={{ p: { xs: 4, md: 6 } }}>
+          <GlassCard sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+            <Box sx={{ p: 3, borderBottom: `1px solid ${theme.primary}20` }}>
+              <Typography variant="h6" sx={{ color: theme.primary, fontWeight: 600 }}>
+                Live Camera Feed
               </Typography>
-              <video ref={videoRef} autoPlay playsInline muted style={{ width: '100%', borderRadius: '8px' }} />
-              <canvas ref={canvasRef} style={{ display: 'none' }} width="640" height="480" />
             </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 20px' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <Box sx={{ flexGrow: 1, p: 3, position: "relative" }}>
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                style={{ width: "100%", borderRadius: "12px", border: interviewStarted ? `3px solid ${theme.error}` : "none" }}
+              />
+              <canvas ref={canvasRef} style={{ display: "none" }} width="640" height="480" />
+              {interviewStarted && (
+                <Box sx={{ position: "absolute", top: 15, right: 15, bgcolor: `${theme.error}80`, color: "white", borderRadius: "20px", px: 2, py: 1 }}>
+                  <Typography variant="caption" sx={{ fontWeight: 600 }}>Recording</Typography>
+                </Box>
+              )}
+            </Box>
+            <Box sx={{ p: 3, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <FrameSendingIcon />
-                <Typography variant="body2" sx={{ color: '#ff9800', fontSize: '0.9rem', fontFamily: "'Poppins', sans-serif" }}>
-                  Sending frames for malpractice detection
-                </Typography>
-                <Tooltip title={instructions} placement="top-start">
-                  <Typography variant="body2" sx={{ color: '#666', ml: 2, fontFamily: "'Poppins', sans-serif", cursor: 'pointer' }}>
-                    Instructions
-                  </Typography>
-                </Tooltip>
+                <Typography variant="body2" sx={{ color: theme.warning, fontWeight: 600 }}>AI Proctoring Active</Typography>
               </Box>
-              <Button onClick={handleEndCall} variant="contained" sx={{ backgroundColor: '#d32f2f', color: '#fff', '&:hover': { backgroundColor: '#b71c1c' }, fontFamily: "'Poppins', sans-serif" }}>
-                End Call
-              </Button>
+              <GradientButton onClick={handleEndCall} color={theme.error} hoverColor="#e53935">
+                End Interview
+              </GradientButton>
             </Box>
-          </Paper>
+          </GlassCard>
         </Grid>
 
-        {/* Right Column (Chat/Interview Q&A) */}
-        <Grid item xs={12} md={6} sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderLeft: '3px solid #0277bd' }}>
-          <Paper sx={{
-            flexGrow: 1,
-            backgroundColor: "rgba(255, 255, 255, 0.9)",
-            borderRadius: "16px 0 0 16px",
-            boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-            backdropFilter: "blur(5px)",
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            padding: '20px',
-            position: 'relative'
-          }}>
+        {/* Right Column (Interview Content) */}
+        <Grid item xs={12} md={6} sx={{ p: { xs: 4, md: 6 } }}>
+          <GlassCard sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
             {!interviewStarted ? (
-              <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: 3 }}>
-                <Paper sx={{ p: 3, bgcolor: '#f5f5f5', borderRadius: '8px', maxWidth: '80%' }}>
-                  <Typography variant="h5" sx={{ color: '#0277bd', mb: 2, fontFamily: "'Montserrat', sans-serif" }}>
-                    Welcome to Your Interview
+              <Box sx={{ flexGrow: 1, p: 5, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
+                <GlassCard sx={{ p: 4, bgcolor: "rgba(255, 255, 255, 0.95)" }}>
+                  <Typography variant="h5" sx={{ color: theme.primary, mb: 3, fontWeight: 700 }}>
+                    Welcome to Your AI Interview
                   </Typography>
                   {jobDetails && (
-                    <>
-                      <Typography variant="body1" sx={{ color: '#333', fontFamily: "'Poppins', sans-serif" }}>
-                        <strong>Job:</strong> {jobDetails.job_name}
-                      </Typography>
-                      <Typography variant="body1" sx={{ color: '#333', fontFamily: "'Poppins', sans-serif" }}>
-                        <strong>Description:</strong> {jobDetails.job_description?.slice(0, 150)}...
-                      </Typography>
-                    </>
-                  )}
-                  {skills.length > 0 && (
-                    <Typography variant="body1" sx={{ color: '#333', fontFamily: "'Poppins', sans-serif" }}>
-                      <strong>Your Skills:</strong> {skills.join(', ')}
-                    </Typography>
-                  )}
-                </Paper>
-                <Button variant="contained" color="primary" onClick={startInterview} sx={{ padding: "10px 20px", fontSize: "16px", fontFamily: "'Poppins', sans-serif" }}>
-                  Start Interview
-                </Button>
-              </Box>
-            ) : (
-              <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                <Typography variant="h4" sx={{ color: "#0277bd", marginBottom: "10px", fontSize: '2rem', fontFamily: "'Montserrat', sans-serif" }}>
-                  Question:
-                </Typography>
-                <Typography variant="h5" sx={{ marginBottom: 1, color: "#333", fontSize: '1.5rem', fontFamily: "'Poppins', sans-serif" }}>
-                  {displayedQuestion}
-                </Typography>
-                <Box sx={{ position: 'relative', display: 'inline-flex', mb: 2 }}>
-                  <CircularProgress
-                    variant="determinate"
-                    value={(timeLeft / 120) * 100}
-                    size={40} // Reduced size from 60 to 40
-                    thickness={5}
-                    sx={{ color: timeLeft < 30 ? '#d32f2f' : '#0277bd' }}
-                  />
-                  <Box sx={{ position: 'absolute', top: 0, left: 0, bottom: 0, right: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Typography variant="body2" sx={{ color: '#333', fontFamily: "'Poppins', sans-serif", fontSize: '0.9rem' }}>
-                      {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
-                    </Typography>
-                  </Box>
-                </Box>
-                <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2 }}>
-                  {isSpeaking ? (
-                    <img src={speakingAvatar} alt="Speaking" style={{ width: '100%', height: 'auto', maxHeight: '480px', objectFit: 'contain' }} />
-                  ) : (
-                    <img src={staticAvatar} alt="Idle" style={{ width: '100%', height: 'auto', maxHeight: '480px', objectFit: 'contain', borderRadius: '8px' }} />
-                  )}
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
-                  {isTtsActive && <SpeakingIcon />}
-                  {!isTtsActive && isRecording && <ListeningIcon />}
-                </Box>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <TextField
-                    fullWidth
-                    value={candidateAnswer}
-                    onChange={(e) => setCandidateAnswer(e.target.value)}
-                    placeholder="Your Answer"
-                    multiline
-                    rows={4}
-                    sx={{ 
-                      '& .MuiInputBase-root': { 
-                        backgroundColor: "#e8f0fe", 
-                        fontSize: '1.25rem',
-                        fontFamily: "'Poppins', sans-serif"
-                      } 
-                    }}
-                  />
-                  {candidateAnswer && (
-                    <Box sx={{ mt: 1 }}>
-                      <Typography variant="body2" sx={{ color: '#555', fontFamily: "'Poppins', sans-serif" }}>
-                        Answer Strength: {getAnswerConfidence(candidateAnswer).label} - {getAnswerConfidence(candidateAnswer).message}
-                      </Typography>
-                      <Box sx={{ height: 5, width: '100%', bgcolor: '#e0e0e0', borderRadius: 5 }}>
-                        <Box
-                          sx={{
-                            height: '100%',
-                            width: getAnswerConfidence(candidateAnswer).width,
-                            bgcolor: getAnswerConfidence(candidateAnswer).color,
-                            borderRadius: 5,
-                          }}
-                        />
+                    <Box sx={{ mb: 3 }}>
+                      <Typography variant="subtitle1" sx={{ color: theme.textPrimary, fontWeight: 600 }}>Position</Typography>
+                      <Box sx={{ p: 2, borderRadius: "8px", bgcolor: theme.primary, color: "white", mt: 1 }}>
+                        <Typography variant="body1" sx={{ fontWeight: 600 }}>{jobDetails.job_name}</Typography>
                       </Box>
                     </Box>
                   )}
-                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 2 }}>
-                    <Button onClick={sendAnswer} disabled={!candidateAnswer.trim()} variant="contained" color="primary" sx={{ padding: "10px 20px", fontSize: "16px", fontFamily: "'Poppins', sans-serif" }}>
-                      Submit Answer
-                    </Button>
+                  {skills.length > 0 && (
+                    <Box sx={{ mb: 3 }}>
+                      <Typography variant="subtitle1" sx={{ color: theme.textPrimary, fontWeight: 600 }}>Your Skills</Typography>
+                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1 }}>
+                        {skills.map((skill, index) => (
+                          <Chip key={index} label={skill} sx={{ bgcolor: theme.secondary, color: "white", fontWeight: 600 }} />
+                        ))}
+                      </Box>
+                    </Box>
+                  )}
+                  <Box>
+                    <Typography variant="subtitle1" sx={{ color: theme.textPrimary, fontWeight: 600, mb: 1 }}>Guidelines</Typography>
+                    <Typography variant="body2" sx={{ color: theme.textSecondary, lineHeight: 1.6 }}>
+                      <ul style={{ paddingLeft: "20px", margin: 0 }}>
+                        <li>Speak clearly into your microphone.</li>
+                        <li>Begin after the question is read.</li>
+                        <li>Stay alone; proctoring is active.</li>
+                        <li>Avoid switching tabs.</li>
+                        <li>Answer within 2 minutes.</li>
+                      </ul>
+                    </Typography>
                   </Box>
+                </GlassCard>
+                <GradientButton onClick={startInterview} sx={{ mt: 4 }}>
+                  Start Interview
+                </GradientButton>
+              </Box>
+            ) : (
+              <Box sx={{ p: 5, flexGrow: 1 }}>
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
+                  <Typography variant="h6" sx={{ color: theme.primary, fontWeight: 600 }}>Current Question</Typography>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, bgcolor: timeLeft < 30 ? `${theme.error}20` : `${theme.primary}20`, borderRadius: "20px", px: 2, py: 1 }}>
+                    <AccessTimeIcon sx={{ color: timeLeft < 30 ? theme.error : theme.primary }} />
+                    <Typography sx={{ color: timeLeft < 30 ? theme.error : theme.primary, fontWeight: 600 }}>
+                      {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, "0")}
+                    </Typography>
+                  </Box>
+                </Box>
+                {displayedQuestion === "Waiting for the next question..." ? (
+                  <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 100 }}>
+                    <CircularProgress sx={{ color: theme.primary }} />
+                  </Box>
+                ) : (
+                  <GlassCard sx={{ p: 3, mb: 3, borderLeft: `4px solid ${theme.primary}` }}>
+                    <Typography variant="h6" sx={{ color: theme.textPrimary, fontWeight: 500 }}>{displayedQuestion}</Typography>
+                  </GlassCard>
+                )}
+                <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 3 }}>
+                  <img
+                    src={isSpeaking ? speakingAvatar : staticAvatar}
+                    alt={isSpeaking ? "Speaking" : "Idle"}
+                    style={{ width: 200, height: 200, borderRadius: "50%", boxShadow: "0 4px 15px rgba(0, 0, 0, 0.2)" }}
+                  />
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 2 }}>
+                    {isTtsActive && <SpeakingIcon />}
+                    {!isTtsActive && isRecording && <ListeningIcon />}
+                    <Typography variant="body1" sx={{ color: theme.textPrimary, fontWeight: 600 }}>
+                      {isTtsActive ? "Please wait, question is being spoken." : isRecording ? "Please speak your answer now." : "Please wait for the next question."}
+                    </Typography>
+                  </Box>
+                </Box>
+                <TextField
+                  fullWidth
+                  value={candidateAnswer}
+                  onChange={(e) => setCandidateAnswer(e.target.value)}
+                  placeholder="Your answer will appear here as you speak..."
+                  multiline
+                  rows={4}
+                  sx={{
+                    "& .MuiInputBase-root": { bgcolor: "white", borderRadius: "12px" },
+                    "& .MuiOutlinedInput-notchedOutline": { borderColor: theme.primary },
+                  }}
+                />
+                {candidateAnswer && (
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="body2" sx={{ color: getAnswerConfidence(candidateAnswer).color, fontWeight: 600, mb: 1 }}>
+                      Answer Strength: {getAnswerConfidence(candidateAnswer).label}
+                    </Typography>
+                    <LinearProgress
+                      variant="determinate"
+                      value={getAnswerConfidence(candidateAnswer).value}
+                      sx={{
+                        height: 8,
+                        borderRadius: 4,
+                        bgcolor: "rgba(0, 0, 0, 0.1)",
+                        "& .MuiLinearProgress-bar": { bgcolor: getAnswerConfidence(candidateAnswer).color },
+                      }}
+                    />
+                    <Typography variant="body2" sx={{ color: theme.textSecondary, fontStyle: "italic", mt: 1 }}>
+                      {getAnswerConfidence(candidateAnswer).message}
+                    </Typography>
+                  </Box>
+                )}
+                <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 3 }}>
+                  <GradientButton onClick={sendAnswer} disabled={!candidateAnswer.trim()}>
+                    Submit Answer
+                  </GradientButton>
                 </Box>
               </Box>
             )}
-          </Paper>
+          </GlassCard>
         </Grid>
       </Grid>
-      <Snackbar
-        open={notification.open}
-        autoHideDuration={3000}
-        onClose={handleCloseNotification}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
-        <Alert 
-          onClose={handleCloseNotification} 
-          severity={notification.severity} 
-          sx={{ 
-            bgcolor: '#fff3e0',
-            color: '#e65100',
-            fontWeight: 'bold',
-            fontSize: '1.1rem',
-            border: '1px solid #ff9800',
-            borderRadius: '8px',
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)",
-            p: 2,
-            fontFamily: "'Poppins', sans-serif",
-            '& .MuiAlert-icon': { color: '#ff9800' }
-          }}
+
+      <Snackbar open={notification.open} autoHideDuration={5000} onClose={handleCloseNotification} anchorOrigin={{ vertical: "top", horizontal: "center" }}>
+        <Alert
+          severity={notification.severity}
+          sx={{ bgcolor: notification.severity === "warning" ? theme.warning : theme.success, color: "white", borderRadius: "8px" }}
         >
           {notification.message}
         </Alert>
