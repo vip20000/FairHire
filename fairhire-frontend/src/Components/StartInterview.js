@@ -25,7 +25,7 @@ import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import staticAvatar from "./avatar-static.jpg";
 import speakingAvatar from "./avatar-speaking.gif";
 
-// Updated theme with original background image
+// Theme and styled components remain unchanged
 const theme = {
   primary: "#0277bd",
   secondary: "#42a5f5",
@@ -39,7 +39,6 @@ const theme = {
   textSecondary: "#5a6a82",
 };
 
-// Styled components (unchanged)
 const GradientButton = styled(Button)(({ color = theme.primary, hoverColor = theme.accent }) => ({
   background: `linear-gradient(45deg, ${color} 0%, ${hoverColor} 100%)`,
   color: "white",
@@ -109,6 +108,9 @@ const StartInterview = () => {
   const [notification, setNotification] = useState({ open: false, message: "", severity: "warning" });
   const [isTtsActive, setIsTtsActive] = useState(false);
   const [timeLeft, setTimeLeft] = useState(120);
+  // **New State Variables for Photo Verification**
+  const [photoData, setPhotoData] = useState(null);
+  const [photoCaptured, setPhotoCaptured] = useState(false);
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -127,6 +129,16 @@ const StartInterview = () => {
     if (length < 50) return { label: "Weak", color: theme.error, value: 25, message: "Elaborate more for a stronger response." };
     if (length < 150) return { label: "Good", color: theme.warning, value: 50, message: "Solid answer—add more details!" };
     return { label: "Great", color: theme.success, value: 75, message: "Well-articulated response!" };
+  };
+
+  // **New Photo Capture Function**
+  const capturePhoto = () => {
+    if (!canvasRef.current || !videoRef.current) return;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext("2d");
+    context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL("image/jpeg");
+    setPhotoData(dataUrl);
   };
 
   // Existing useEffect hooks and functions remain unchanged
@@ -324,7 +336,7 @@ const StartInterview = () => {
       </Box>
 
       <Grid container sx={{ minHeight: "100vh", pt: 10 }}>
-        {/* Left Column (Camera) */}
+        {/* Left Column (Camera) - Unchanged */}
         <Grid item xs={12} md={6} sx={{ p: { xs: 4, md: 6 } }}>
           <GlassCard sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
             <Box sx={{ p: 3, borderBottom: `1px solid ${theme.primary}20` }}>
@@ -359,7 +371,7 @@ const StartInterview = () => {
           </GlassCard>
         </Grid>
 
-        {/* Right Column (Interview Content) */}
+        {/* Right Column (Interview Content) - Modified */}
         <Grid item xs={12} md={6} sx={{ p: { xs: 4, md: 6 } }}>
           <GlassCard sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
             {!interviewStarted ? (
@@ -398,12 +410,48 @@ const StartInterview = () => {
                       </ul>
                     </Typography>
                   </Box>
+                  {/* New Identity Verification Section */}
+                  <Box sx={{ mt: 4 }}>
+                    <Typography variant="subtitle1" sx={{ color: theme.textPrimary, fontWeight: 600 }}>
+                      Identity Verification
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: theme.textSecondary, mb: 2 }}>
+                      Please take a clear photo of yourself for identity verification.
+                    </Typography>
+                    {!photoData ? (
+                      <Box sx={{ display: "flex", justifyContent: "center" }}>
+                        <GradientButton onClick={capturePhoto}>Take Photo</GradientButton>
+                      </Box>
+                    ) : (
+                      <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                        <img
+                          src={photoData}
+                          alt="Captured Photo"
+                          style={{ width: 200, height: 150, borderRadius: "8px", marginBottom: "10px" }}
+                        />
+                        <Box sx={{ display: "flex", gap: 2 }}>
+                          <GradientButton
+                            onClick={() => setPhotoData(null)}
+                            color={theme.warning}
+                            hoverColor={theme.error}
+                          >
+                            Retake
+                          </GradientButton>
+                          <GradientButton onClick={() => setPhotoCaptured(true)}>
+                            Use This Photo
+                          </GradientButton>
+                        </Box>
+                      </Box>
+                    )}
+                  </Box>
                 </GlassCard>
-                <GradientButton onClick={startInterview} sx={{ mt: 4 }}>
+                {/* Modified Start Interview Button */}
+                <GradientButton onClick={startInterview} sx={{ mt: 4 }} disabled={!photoCaptured}>
                   Start Interview
                 </GradientButton>
               </Box>
             ) : (
+              // Interview started section remains unchanged
               <Box sx={{ p: 5, flexGrow: 1 }}>
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
                   <Typography variant="h6" sx={{ color: theme.primary, fontWeight: 600 }}>Current Question</Typography>

@@ -5,7 +5,7 @@ import google.generativeai as genai
 import aiohttp
 
 # Configure the API
-API_KEY = "AIzaSyD6qTreN6DozEdKFtPyN4uj1CKWT3c8NnU"  # Replace with an environment variable in production
+API_KEY = "ADD THE GEMINI API KEY HERE"  # Replace with an environment variable in production
 genai.configure(api_key=API_KEY)
 
 # Define model configuration
